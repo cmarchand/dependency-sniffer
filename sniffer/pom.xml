@@ -99,5 +99,30 @@
                 </plugins>
             </build>
         </profile>
+        <profile>
+            <id>run</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>1.6.0</version>
+                        <executions>
+                            <execution>
+                                <phase>package</phase>
+                                <goals><goal>java</goal></goals>
+                                <configuration>
+                                    <mainClass>top.marchand.maven.dependency.sniffer.Sniffer</mainClass>
+                                    <arguments>
+                                        <argument>-c</argument>
+                                        <argument>../config/src/test/resources/config.xml</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
     </profiles>
 </project>

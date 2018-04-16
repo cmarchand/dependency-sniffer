@@ -17,11 +17,13 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import nu.xom.Document;
 import nu.xom.ParsingException;
 import top.marchand.maven.dependency.config.Config;
 import top.marchand.maven.dependency.sniffer.builds.DependencyDocumentBuilder;
-import top.marchand.maven.dependency.sniffer.config.SnifferConfig;
+import top.marchand.maven.dependency.sniffer.builds.DependencyScanner;
+import top.marchand.maven.dependency.sniffer.builds.ErrorReporter;
 import top.marchand.org.basex.api.BaseXClient;
 
 /**
@@ -35,13 +37,15 @@ public class Sniffer {
     }
     private final Config config;
 //    private final File inputFile;
-    private DependencyDocumentBuilder dependencyDocumentBuidler;
+    private final DependencyDocumentBuilder dependencyDocumentBuidler;
+    private final ErrorReporter reporter;
     
-    public Sniffer(SnifferConfig config) {
+    public Sniffer(Config config) {
         super();
-        this.config=config.getConfig();
+        this.config=config;
 //        this.inputFile=config.getInputFile();
         this.dependencyDocumentBuidler = new DependencyDocumentBuilder();
+        this.reporter = new ErrorReporter();
     }
     
     public void run() throws IOException {
@@ -50,7 +54,12 @@ public class Sniffer {
 //        saveDocument(document);
         ExecutorService service = Executors.newFixedThreadPool(config.getNbThreads());
         for(String root: config.getNexusRoots()) {
-            
+            service.submit(new DependencyScanner(root, service, reporter));
+        }
+        try {
+            service.awaitTermination(1l, TimeUnit.HOURS);
+        } catch(InterruptedException ex) {
+            System.err.println("HTTP scanning took more than 1 hour");
         }
     }
     
@@ -93,10 +102,10 @@ public class Sniffer {
         return dependencyDocumentBuidler.buildDocument(lines.toArray(new String[lines.size()]));
     }
     
-    protected static SnifferConfig parseArguments(String[] args) throws IOException, ParsingException {
-        if(args.length<3) {
+    protected static Config parseArguments(String[] args) throws IOException, ParsingException {
+        if(args.length<2) {
             System.err.println(SYNTAX);
-            throw new IllegalArgumentException("At least 3 arguments are required");
+            throw new IllegalArgumentException("At least 2 arguments are required");
         }
         boolean isConfigFile = false;
         Config config = null;
@@ -114,11 +123,11 @@ public class Sniffer {
                     throw ex;
                 }
                 isConfigFile = !isConfigFile;
-            } else {
-                inputFileName = s;
+//            } else {
+//                inputFileName = s;
             }
         }
-        return new SnifferConfig(config, new File(inputFileName));
+        return config;
     }
     
     public static final String SYNTAX = "java top.marchand.maven.dependency.sniffer.Sniffer -c config <fileName>";

@@ -1,2 +1,4 @@
 target/
 sniffer/target
+sniffer/nbactions.xml
+config/target

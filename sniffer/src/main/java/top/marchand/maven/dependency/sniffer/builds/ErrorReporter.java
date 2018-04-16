@@ -12,11 +12,12 @@ package top.marchand.maven.dependency.sniffer.builds;
 public class ErrorReporter {
     
     public void error(final String message, final Exception exception) {
-        
+        System.err.println(message);
+        exception.printStackTrace(System.err);
     }
     
     public void info(final String message) {
-        
+        System.out.println(message);
     }
     
 }

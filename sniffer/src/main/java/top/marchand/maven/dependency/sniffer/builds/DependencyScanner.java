@@ -10,6 +10,7 @@ import java.net.URL;
 import java.util.concurrent.ExecutorService;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 /**
@@ -38,8 +39,9 @@ public class DependencyScanner implements Runnable {
             Document doc = Jsoup.parse(url, 1000);
             // it's not XPath, see https://jsoup.org/cookbook/extracting-data/selector-syntax
             Elements links = doc.select("a[href]");
-            while(links!=null) {
-                String target = links.attr("href");
+            for(int i=0;i<links.size();i++) {
+                Element el = links.get(i);
+                String target = el.attr("href");
                 if(!"../".equals(target)) {
                     String newUrl = urlToScan.endsWith("/") ? urlToScan+target : urlToScan+"/"+target;
                     if(newUrl.endsWith("-tree.txt")) {
@@ -49,8 +51,6 @@ public class DependencyScanner implements Runnable {
                         service.submit(new DependencyScanner(newUrl, service, reporter));
                     }
                 }
-                // maybe nextAll ?
-                links = links.nextAll();
             }
         } catch(IOException ex) {
             reporter.error(urlToScan, ex);

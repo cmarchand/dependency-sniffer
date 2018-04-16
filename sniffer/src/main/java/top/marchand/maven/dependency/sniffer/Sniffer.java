@@ -17,6 +17,7 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import nu.xom.Document;
 import nu.xom.ParsingException;
@@ -39,6 +40,8 @@ public class Sniffer {
 //    private final File inputFile;
     private final DependencyDocumentBuilder dependencyDocumentBuidler;
     private final ErrorReporter reporter;
+    private ExecutorService scannerService;
+    private long lastSubmit = 0L;
     
     public Sniffer(Config config) {
         super();
@@ -52,15 +55,32 @@ public class Sniffer {
 //        Document document = constructDocument(inputFile);
 //        System.out.println(document.toXML());
 //        saveDocument(document);
-        ExecutorService service = Executors.newFixedThreadPool(config.getNbThreads());
+        final ScheduledExecutorService surveillor = Executors.newSingleThreadScheduledExecutor();
+        scannerService = Executors.newFixedThreadPool(config.getNbThreads());
         for(String root: config.getNexusRoots()) {
-            service.submit(new DependencyScanner(root, service, reporter));
+            scannerService.submit(new DependencyScanner(root, scannerService, reporter));
         }
+        surveillor.scheduleAtFixedRate(new Runnable() {
+            @Override
+            public void run() {
+                long now = System.currentTimeMillis();
+                if((now-lastSubmit)>10000) {
+                    scannerService.shutdown();
+                    surveillor.shutdown();
+                    // TODO : stop the last one.
+                }
+            }
+        }, 1, 1, TimeUnit.SECONDS);
         try {
-            service.awaitTermination(1l, TimeUnit.HOURS);
+            scannerService.awaitTermination(1l, TimeUnit.HOURS);
         } catch(InterruptedException ex) {
             System.err.println("HTTP scanning took more than 1 hour");
         }
+    }
+    
+    public void submitScantask(Runnable t) {
+        lastSubmit = System.currentTimeMillis();
+        scannerService.submit(t);
     }
     
     protected void saveDocument(Document document) throws IOException {

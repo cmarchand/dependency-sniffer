@@ -19,21 +19,21 @@ import org.jsoup.select.Elements;
  */
 public class DependencyScanner implements Runnable {
     private final String urlToScan;
-    private final ExecutorService service;
+    private final ExecutorService scannerService;
     private final ErrorReporter reporter;
 
     public DependencyScanner(final String urlToScan, 
-            final ExecutorService service,
+            final ExecutorService scannerService,
             final ErrorReporter reporter) {
         super();
         this.urlToScan=urlToScan;
-        this.service=service;
+        this.scannerService=scannerService;
         this.reporter=reporter;
     }
 
     @Override
     public void run() {
-        reporter.info("loonking at "+urlToScan);
+        reporter.info("looking at "+urlToScan);
         try {
             URL url = new URL(urlToScan);
             Document doc = Jsoup.parse(url, 1000);
@@ -46,9 +46,9 @@ public class DependencyScanner implements Runnable {
                     String newUrl = urlToScan.endsWith("/") ? urlToScan+target : urlToScan+"/"+target;
                     if(newUrl.endsWith("-tree.txt")) {
                         // TODO
-                        reporter.info("found "+newUrl);
-                    } else if(newUrl.endsWith("/") && !newUrl.equals(urlToScan)) {
-                        service.submit(new DependencyScanner(newUrl, service, reporter));
+                        reporter.info("\tfound "+target);
+                    } else if(newUrl.endsWith("/") && !newUrl.equals(urlToScan) && !target.startsWith(urlToScan)) {
+                        scannerService.submit(new DependencyScanner(newUrl, scannerService, reporter));
                     }
                 }
             }

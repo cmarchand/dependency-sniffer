@@ -23,15 +23,16 @@ import nu.xom.Document;
 import nu.xom.ParsingException;
 import top.marchand.maven.dependency.config.Config;
 import top.marchand.maven.dependency.sniffer.builds.DependencyDocumentBuilder;
-import top.marchand.maven.dependency.sniffer.builds.DependencyScanner;
+import top.marchand.maven.dependency.sniffer.builds.HttpScanner;
 import top.marchand.maven.dependency.sniffer.builds.ErrorReporter;
+import top.marchand.maven.dependency.sniffer.builds.ScanService;
 import top.marchand.org.basex.api.BaseXClient;
 
 /**
  *
  * @author cmarchand
  */
-public class Sniffer {
+public class Sniffer implements ScanService {
     
     public static void main(String[] args) throws IOException, ParsingException {
         new Sniffer(parseArguments(args)).run();
@@ -58,7 +59,7 @@ public class Sniffer {
         final ScheduledExecutorService surveillor = Executors.newSingleThreadScheduledExecutor();
         scannerService = Executors.newFixedThreadPool(config.getNbThreads());
         for(String root: config.getNexusRoots()) {
-            scannerService.submit(new DependencyScanner(root, scannerService, reporter));
+            scannerService.submit(new HttpScanner(root, this, reporter));
         }
         surveillor.scheduleAtFixedRate(new Runnable() {
             @Override
@@ -78,11 +79,12 @@ public class Sniffer {
         }
     }
     
+    @Override
     public void submitScantask(Runnable t) {
         lastSubmit = System.currentTimeMillis();
         scannerService.submit(t);
     }
-    
+        
     protected void saveDocument(Document document) throws IOException {
         String id = document.getRootElement().getAttributeValue("id");
         String[] its = id.split(":");
@@ -97,10 +99,10 @@ public class Sniffer {
         pw.print(document.toXML());
         pw.flush();
         
-        BaseXClient client = new BaseXClient(config.getBasexHost(), config.getBasexPort(), config.getBasexUser(), config.getBasexPassword());
-        client.execute("OPEN DEPS;");
-        client.replace(path, new ByteArrayInputStream(baos.toByteArray()));
-        client.close();
+        try (BaseXClient client = new BaseXClient(config.getBasexHost(), config.getBasexPort(), config.getBasexUser(), config.getBasexPassword())) {
+            client.execute("OPEN DEPS;");
+            client.replace(path, new ByteArrayInputStream(baos.toByteArray()));
+        }
     }
     /**
      * Constructs a Document from the specified file

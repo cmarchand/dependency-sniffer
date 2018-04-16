@@ -7,7 +7,6 @@ package top.marchand.maven.dependency.sniffer.builds;
 
 import java.io.IOException;
 import java.net.URL;
-import java.util.concurrent.ExecutorService;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -17,13 +16,13 @@ import org.jsoup.select.Elements;
  * Scans a URL, and construct sub-urls or dependency files.
  * @author cmarchand
  */
-public class DependencyScanner implements Runnable {
+public class HttpScanner implements Runnable {
     private final String urlToScan;
-    private final ExecutorService scannerService;
+    private final ScanService scannerService;
     private final ErrorReporter reporter;
 
-    public DependencyScanner(final String urlToScan, 
-            final ExecutorService scannerService,
+    public HttpScanner(final String urlToScan, 
+            final ScanService scannerService,
             final ErrorReporter reporter) {
         super();
         this.urlToScan=urlToScan;
@@ -48,7 +47,7 @@ public class DependencyScanner implements Runnable {
                         // TODO
                         reporter.info("\tfound "+target);
                     } else if(newUrl.endsWith("/") && !newUrl.equals(urlToScan) && !target.startsWith(urlToScan)) {
-                        scannerService.submit(new DependencyScanner(newUrl, scannerService, reporter));
+                        scannerService.submitScantask(new HttpScanner(newUrl, scannerService, reporter));
                     }
                 }
             }

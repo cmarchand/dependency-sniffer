@@ -4,7 +4,7 @@
     http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>sniffer</artifactId>
+    <artifactId>config</artifactId>
     <packaging>jar</packaging>
     
     <parent>
@@ -13,7 +13,7 @@
         <version>1.0.0-SNAPSHOT</version>
     </parent>
     
-    <name>Dependency Sniffer</name>
+    <name>Dependency config</name>
     
     <scm>
         <connection>scm:git:https://github.com/cmarchand/dependency-sniffer.git</connection>
@@ -24,24 +24,9 @@
     
     <dependencies>
         <dependency>
-            <groupId>${project.groupId}</groupId>
-            <artifactId>config</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.basex</groupId>
-            <artifactId>basex-api</artifactId>
-            <version>9.0</version>
-        </dependency>
-        <dependency>
             <groupId>com.io7m.xom</groupId>
             <artifactId>xom</artifactId>
             <version>1.2.10</version>
-        </dependency>
-        <dependency>
-            <groupId>org.jsoup</groupId>
-            <artifactId>jsoup</artifactId>
-            <version>1.11.3</version>
         </dependency>
     </dependencies>
     

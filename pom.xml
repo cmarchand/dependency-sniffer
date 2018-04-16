@@ -9,10 +9,11 @@
     <packaging>pom</packaging>
     
     <modules>
+        <module>config</module>
         <module>sniffer</module>
     </modules>
     
-    <name>Sniffer Parent</name>
+    <name>Dependency Parent</name>
     <description>A project to track dependencies in a Nexus repository</description>
     <inceptionYear>2018</inceptionYear>
     <url>https://github.com/cmarchand/dependency-sniffer</url>

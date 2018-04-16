@@ -45,12 +45,12 @@ public class DependencyScanner implements Runnable {
                     if(newUrl.endsWith("-tree.txt")) {
                         // TODO
                         reporter.info("found "+newUrl);
-                    } else if(newUrl.endsWith("/")) {
+                    } else if(newUrl.endsWith("/") && !newUrl.equals(urlToScan)) {
                         service.submit(new DependencyScanner(newUrl, service, reporter));
                     }
                 }
                 // maybe nextAll ?
-                links = links.next();
+                links = links.nextAll();
             }
         } catch(IOException ex) {
             reporter.error(urlToScan, ex);

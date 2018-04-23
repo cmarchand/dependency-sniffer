@@ -13,21 +13,24 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 /**
- * Scans a URL, and construct sub-urls or dependency files.
+ * Scans a URL, looks for sub-pages, or dependencies.
  * @author cmarchand
  */
 public class HttpScanner implements Runnable {
     private final String urlToScan;
     private final ScanService scannerService;
     private final ErrorReporter reporter;
+    private final DependencyService dependencyService;
 
     public HttpScanner(final String urlToScan, 
             final ScanService scannerService,
-            final ErrorReporter reporter) {
+            final ErrorReporter reporter,
+            final DependencyService dependencyService) {
         super();
         this.urlToScan=urlToScan;
         this.scannerService=scannerService;
         this.reporter=reporter;
+        this.dependencyService=dependencyService;
     }
 
     @Override
@@ -44,10 +47,10 @@ public class HttpScanner implements Runnable {
                 if(!"../".equals(target)) {
                     String newUrl = urlToScan.endsWith("/") ? urlToScan+target : urlToScan+"/"+target;
                     if(newUrl.endsWith("-tree.txt")) {
-                        // TODO
                         reporter.info("\tfound "+target);
+                        dependencyService.submitDependencyTask(new DependencyScanner(target, reporter, dependencyService));
                     } else if(newUrl.endsWith("/") && !newUrl.equals(urlToScan) && !target.startsWith(urlToScan)) {
-                        scannerService.submitScantask(new HttpScanner(newUrl, scannerService, reporter));
+                        scannerService.submitScantask(new HttpScanner(newUrl, scannerService, reporter, dependencyService));
                     }
                 }
             }

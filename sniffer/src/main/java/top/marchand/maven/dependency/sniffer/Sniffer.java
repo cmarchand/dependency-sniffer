@@ -5,24 +5,18 @@
  */
 package top.marchand.maven.dependency.sniffer;
 
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
-import java.util.ArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import nu.xom.Document;
+import nu.xom.Element;
 import nu.xom.ParsingException;
 import top.marchand.maven.dependency.config.Config;
 import top.marchand.maven.dependency.sniffer.builds.DependencyDocumentBuilder;
+import top.marchand.maven.dependency.sniffer.builds.DependencyService;
 import top.marchand.maven.dependency.sniffer.builds.HttpScanner;
 import top.marchand.maven.dependency.sniffer.builds.ErrorReporter;
 import top.marchand.maven.dependency.sniffer.builds.ScanService;
@@ -32,34 +26,49 @@ import top.marchand.org.basex.api.BaseXClient;
  *
  * @author cmarchand
  */
-public class Sniffer implements ScanService {
+public class Sniffer implements ScanService, DependencyService {
     
     public static void main(String[] args) throws IOException, ParsingException {
         new Sniffer(parseArguments(args)).run();
     }
     private final Config config;
-//    private final File inputFile;
     private final DependencyDocumentBuilder dependencyDocumentBuidler;
     private final ErrorReporter reporter;
     private ExecutorService scannerService;
+    private ExecutorService dependencyService;
+    private BaseXClient client;
     private long lastSubmit = 0L;
+    private Document tree;
     
     public Sniffer(Config config) {
         super();
         this.config=config;
-//        this.inputFile=config.getInputFile();
         this.dependencyDocumentBuidler = new DependencyDocumentBuilder();
         this.reporter = new ErrorReporter();
     }
     
     public void run() throws IOException {
-//        Document document = constructDocument(inputFile);
-//        System.out.println(document.toXML());
-//        saveDocument(document);
         final ScheduledExecutorService surveillor = Executors.newSingleThreadScheduledExecutor();
         scannerService = Executors.newFixedThreadPool(config.getNbThreads());
+        dependencyService = Executors.newSingleThreadExecutor();
+        client = new BaseXClient(
+                config.getBasexHost(), 
+                config.getBasexPort(), 
+                config.getBasexUser(), 
+                config.getBasexPassword());
+        // sets the collection to use
+        client.execute("OPEN DEPS;");
+        // gets the tree.xml document
+        BaseXClient.Query query = client.query("xquery version 3.1; db:open('deps.xml','tree.xml')");
+        tree = null;
+        try {
+            tree = new nu.xom.Builder().build(query.execute(), "/tree.xml");
+        } catch(ParsingException ex) {
+            tree = new Document(new Element("tree"));
+        }
+
         for(String root: config.getNexusRoots()) {
-            scannerService.submit(new HttpScanner(root, this, reporter));
+            scannerService.submit(new HttpScanner(root, this, reporter, this));
         }
         surveillor.scheduleAtFixedRate(new Runnable() {
             @Override
@@ -68,12 +77,14 @@ public class Sniffer implements ScanService {
                 if((now-lastSubmit)>10000) {
                     scannerService.shutdown();
                     surveillor.shutdown();
-                    // TODO : stop the last one.
+                    dependencyService.shutdown();
                 }
             }
         }, 1, 1, TimeUnit.SECONDS);
         try {
             scannerService.awaitTermination(1l, TimeUnit.HOURS);
+            dependencyService.awaitTermination(1l, TimeUnit.HOURS);
+            client.close();
         } catch(InterruptedException ex) {
             System.err.println("HTTP scanning took more than 1 hour");
         }
@@ -84,46 +95,23 @@ public class Sniffer implements ScanService {
         lastSubmit = System.currentTimeMillis();
         scannerService.submit(t);
     }
-        
-    protected void saveDocument(Document document) throws IOException {
-        String id = document.getRootElement().getAttributeValue("id");
-        String[] its = id.split(":");
-        StringBuilder sb = new StringBuilder("/");
-        sb.append(its[0].replaceAll("\\.","/")).append("/");
-        sb.append(its[1]).append("/");
-        sb.append(its[3]).append(".xml");
-        String path = sb.toString();
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        OutputStreamWriter osw = new OutputStreamWriter(baos);
-        PrintWriter pw = new PrintWriter(osw);
-        pw.print(document.toXML());
-        pw.flush();
-        
-        try (BaseXClient client = new BaseXClient(config.getBasexHost(), config.getBasexPort(), config.getBasexUser(), config.getBasexPassword())) {
-            client.execute("OPEN DEPS;");
-            client.replace(path, new ByteArrayInputStream(baos.toByteArray()));
-        }
+            
+    @Override
+    public void submitDependencyTask(Runnable r) {
+        lastSubmit=System.currentTimeMillis();
+        dependencyService.submit(r);
     }
-    /**
-     * Constructs a Document from the specified file
-     * @param file
-     * @return
-     * @throws FileNotFoundException
-     * @throws IOException 
-     */
-    protected Document constructDocument(File file) throws FileNotFoundException, IOException {
-        ArrayList<String> lines;
-        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
-            lines = new ArrayList<>();
-            String line = br.readLine();
-            while(line!=null && !line.isEmpty()) {
-                lines.add(line);
-                line = br.readLine();
-            }
-        }
-        return dependencyDocumentBuidler.buildDocument(lines.toArray(new String[lines.size()]));
+
+    @Override
+    public BaseXClient getDbClient() {
+        return client;
     }
     
+    @Override
+    public Document getTreeDocument() {
+        return tree;
+    }
+
     protected static Config parseArguments(String[] args) throws IOException, ParsingException {
         if(args.length<2) {
             System.err.println(SYNTAX);
@@ -131,7 +119,6 @@ public class Sniffer implements ScanService {
         }
         boolean isConfigFile = false;
         Config config = null;
-        String inputFileName = null;
         for(String s: args) {
             if("-c".equals(s)) {
                 isConfigFile = true; 
@@ -145,13 +132,11 @@ public class Sniffer implements ScanService {
                     throw ex;
                 }
                 isConfigFile = !isConfigFile;
-//            } else {
-//                inputFileName = s;
             }
         }
         return config;
     }
     
     public static final String SYNTAX = "java top.marchand.maven.dependency.sniffer.Sniffer -c config <fileName>";
-    
+
 }

@@ -1,0 +1,144 @@
+
+body {
+  background-color : white;
+  font-family: "Proxima Nova","Helvetica Neue",Helvetica,Arial,sans-serif;
+  font: normal 13px/15px "Proxima Nova","Helvetica Neue",Helvetica,Arial,sans-serif;
+  
+}
+
+.panel {
+  border: 1px solid #444;
+  padding: 0px;
+  background-color : white;
+  overflow-y : auto;
+}
+
+.panel .panel-header {
+    background-image: none;
+    background-color: #444;
+    color : lightgrey;
+}
+
+.panel .panel-header h1, .panel .panel-header h2, .panel .panel-header h3, .panel .panel-header h4, .panel .panel-header .h5, .panel .panel-header .h6 {
+  margin : 0px;
+  padding : 5px;
+}
+
+.panel .panel-body {
+  padding : 5px;
+}
+
+.arbre {
+  background-color : white;
+  --width:100%;
+  padding : 5px;
+  margin : 5px;
+  
+}
+
+#parcourir {
+  overflow-y: auto;
+  height:calc(100vh - 40px);
+}
+
+#detailDependances {
+  overflow-y: auto;
+  overflow-y: auto;
+  float:right;
+  width:50%;
+  height:calc(100vh - 40px);
+}
+
+#detail table {
+  width : 100%;
+}
+
+#detail tr {
+  margin : 5px;
+}
+
+#detail td {
+  vertical-align: top;
+}
+
+#detail th {
+  vertical-align: top;
+  text-align : left;
+  padding-left: 0;
+  padding-right: 6px;
+  font-weight: bold;
+}
+
+#detailDependances {
+  visibility : hidden
+}
+
+.arbre .noeud {
+  margin-top : 2px;
+  margin-bottom : 2px;
+}
+
+.arbre img {
+  width: 18px;
+  margin-right: 2px;
+  background-repeat: no-repeat;
+  background-position: 0 center;
+  vertical-align: top;
+}
+
+.arbre img.arbre-img {
+  margin-top: -4px;
+  margin-bottom: -3px;
+  width: 18px;
+  height: 19px;
+  margin-right: 2px;  
+}
+
+.arbre img.actif {
+  cursor : pointer;
+}
+
+.arbre img.arbre-coude-plie-fin {
+  background-image: url(../img/elbow-end-plus.png);  
+}
+.arbre img.arbre-coude-plie {
+  background-image: url(../img/elbow-plus.png);
+}
+.arbre img.arbre-coude-deplie-fin {
+  background-image: url(../img/elbow-end-minus.png);  
+}
+.arbre img.arbre-coude-deplie {
+  background-image: url(../img/elbow-minus.png);
+}
+
+.arbre img.ligne-verticale {
+  background-image: url(../img/ligne-verticale.png);
+}
+
+.arbre img.feuille-non-cadet {
+  background-image: url(../img/elbow.png);
+}
+
+.arbre img.feuille-cadet {
+  background-image: url(../img/elbow-end.png);
+}
+
+.arbre img.arbre-icone-noeud {
+  background-image: url(../img/folder.png);
+  height : 17px;
+  --vertical-align: middle;
+}
+
+.arbre img.arbre-icone-feuille {
+  height: 16px;
+  background-image: url(../img/leaf.png);
+  vertical-align: middle;
+}
+
+.arbre .feuille-active {
+  cursor : pointer;
+}
+
+img {
+  border: 0;
+}

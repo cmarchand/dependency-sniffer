@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>Exploration des dépendances</title>
+    <link rel="stylesheet" href="css/main.css" />
+    <script data-main="main" src="lib/require.js"></script>
+
+</head>
+
+<body>
+    <h1>Exploration des dépendances</h1>
+
+    <div id="detailDependances" class="panel">
+        <div class="panel-header">
+            <h3>Détail</h3>
+        </div>
+        <div class="panel-body">
+            <div id="detail">
+                <table>
+                    <tr>
+                        <th class="label">Id</th>
+                        <td class="value" id="id"></td>
+                    </tr>
+                    <tr>
+                        <th class="label">GroupId</th>
+                        <td class="value" id="groupId"></td>
+                    </tr>
+                    <tr>
+                        <th class="label">ArtifactId</th>
+                        <td class="value" id="artifactId"></td>
+                    </tr>
+                    <tr>
+                        <th class="label">Version</th>
+                        <td class="value" id="version"></td>
+                    </tr>
+                    <tr>
+                        <th class="label">Dépendances</th>
+                    </tr>
+                    <tr>
+                        <td colspan="2">
+                            <div id="racineArbreDep" class="arbre"></div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th class="label">Dépendances inversées</th>
+                    </tr>
+                    <tr>
+                        <td colspan="2">
+                            <div id="racineArbreDepInv" class="arbre"></div>
+                        </td>
+                    </tr>
+
+                </table>
+
+
+            </div>
+        </div>
+    </div>
+
+    <div id="parcourir">
+        <h2>Parcourir le repository :</h2>
+        <div id="racineArbre" class="arbre">
+        </div>
+    </div>
+
+
+
+</body>
+
+</html>

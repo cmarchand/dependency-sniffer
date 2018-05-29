@@ -12,12 +12,22 @@ define(['modules/dependances', 'modules/arbreUtils'], function (dependances, arb
     var racineArbre = document.getElementById("racineArbre");
     var arbre = arbreUtils.creerArbre(racineArbre);
 
-    var optionsRacine = {
-        id: "eu",
-        label: "eu", 
-        dernier : true
+    // recherche des premiers enfants 
+    dependances.chercherEnfants('', premieresRacinesCallback);
+
+    // callback de la recherche des premiers enfants 
+    function premieresRacinesCallback(donnees) {
+        var optionsRacine, i;
+
+        for (i = 0; i < donnees.length; i++) {
+            optionsRacine = {
+                id: donnees[i].name,
+                label: donnees[i].name,
+                dernier: (i === donnees.length-1)
+            }
+            arbre.ajouterNoeud(optionsRacine);           
+        }
     }
-    arbre.ajouterNoeud(optionsRacine);
 
     // création de l'arbre des dépendances des artefacts : 
     var racineArbreDep = document.getElementById("racineArbreDep");
@@ -73,20 +83,20 @@ define(['modules/dependances', 'modules/arbreUtils'], function (dependances, arb
      * Mise à jour du détail d'un artefact dans la vue  
      */
     function afficherDetail(donnees) {
-		var valueId = document.getElementById("id");
-		valueId.innerHTML = donnees.id;
+        var valueId = document.getElementById("id");
+        valueId.innerHTML = donnees.id;
 
-		var valueGroupId = document.getElementById("groupId");
-		valueGroupId.innerHTML = donnees.designation.groupId;
+        var valueGroupId = document.getElementById("groupId");
+        valueGroupId.innerHTML = donnees.designation.groupId;
 
-		var valueArtifactId = document.getElementById("artifactId");
-		valueArtifactId.innerHTML = donnees.designation.artifactId;
+        var valueArtifactId = document.getElementById("artifactId");
+        valueArtifactId.innerHTML = donnees.designation.artifactId;
 
-		var valueVersion = document.getElementById("version");
-		valueVersion.innerHTML = donnees.designation.version;
+        var valueVersion = document.getElementById("version");
+        valueVersion.innerHTML = donnees.designation.version;
 
-		document.getElementById("detailDependances").style.visibility = "visible";
-	}
+        document.getElementById("detailDependances").style.visibility = "visible";
+    }
 
     /**
      * Gestionnaire d'évènement d'activation d'une feuille de l'arbre 

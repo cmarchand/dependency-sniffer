@@ -29,4 +29,9 @@ public interface DependencyService {
      * @return The tree document.
      */
     public Document getTreeDocument();
+    
+    /**
+     * Notifies a dependency task has been completed
+     */
+    public void dependencyTaskCompleted();
 }

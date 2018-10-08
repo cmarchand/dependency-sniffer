@@ -11,6 +11,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import nu.xom.Document;
 import nu.xom.Element;
 import nu.xom.ParsingException;
@@ -37,8 +40,10 @@ public class Sniffer implements ScanService, DependencyService {
     private ExecutorService scannerService;
     private ExecutorService dependencyService;
     private BaseXClient client;
-    private long lastSubmit = 0L;
+//    private long lastSubmit = 0L;
     private Document tree;
+    private AtomicInteger httpScansCount;
+    private AtomicInteger dependencyScansCount;
     
     public Sniffer(Config config) {
         super();
@@ -48,6 +53,8 @@ public class Sniffer implements ScanService, DependencyService {
     }
     
     public void run() throws IOException {
+        dependencyScansCount = new AtomicInteger(0);
+        httpScansCount = new AtomicInteger(0);
         final ScheduledExecutorService surveillor = Executors.newSingleThreadScheduledExecutor();
         scannerService = Executors.newFixedThreadPool(config.getNbThreads());
         dependencyService = Executors.newSingleThreadExecutor();
@@ -57,48 +64,56 @@ public class Sniffer implements ScanService, DependencyService {
                 config.getBasexUser(), 
                 config.getBasexPassword());
         // sets the collection to use
-        client.execute("OPEN DEPS;");
+        client.execute("CHECK DEPS;");
         // gets the tree.xml document
-        BaseXClient.Query query = client.query("xquery version 3.1; db:open('deps.xml','tree.xml')");
+        BaseXClient.Query query = client.query("db:open('DEPS','tree.xml')");
         tree = null;
+        String content="";
         try {
-            tree = new nu.xom.Builder().build(query.execute(), "/tree.xml");
-        } catch(ParsingException ex) {
+            content = query.execute();
+            tree = new nu.xom.Builder().build(content, "/tree.xml");
+        } catch(ParsingException | IOException ex) {
+            reporter.error(content, ex);
             tree = new Document(new Element("tree"));
         }
 
         for(String root: config.getNexusRoots()) {
-            scannerService.submit(new HttpScanner(root, this, reporter, this));
+            submitScantask(new HttpScanner(root, this, reporter, this));
         }
         surveillor.scheduleAtFixedRate(new Runnable() {
             @Override
             public void run() {
-                long now = System.currentTimeMillis();
-                if((now-lastSubmit)>10000) {
+                reporter.debug("httpScans: "+httpScansCount.get()+" dependencyScans: "+dependencyScansCount.get());
+                if(httpScansCount.get()==0 && dependencyScansCount.get()==0) {
                     scannerService.shutdown();
                     surveillor.shutdown();
                     dependencyService.shutdown();
+                    try {
+                        scannerService.awaitTermination(1l, TimeUnit.HOURS);
+                        dependencyService.awaitTermination(1l, TimeUnit.HOURS);
+                        client.close();
+                    } catch(InterruptedException ex) {
+                        reporter.error("HTTP scanning took more than 1 hour", ex);
+                    } catch (IOException ex) {
+                        reporter.error("while closing BaseXClient", ex);
+                    }
                 }
             }
-        }, 1, 1, TimeUnit.SECONDS);
-        try {
-            scannerService.awaitTermination(1l, TimeUnit.HOURS);
-            dependencyService.awaitTermination(1l, TimeUnit.HOURS);
-            client.close();
-        } catch(InterruptedException ex) {
-            System.err.println("HTTP scanning took more than 1 hour");
-        }
+        }, 0, 1, TimeUnit.SECONDS);
     }
     
     @Override
     public void submitScantask(Runnable t) {
-        lastSubmit = System.currentTimeMillis();
+        //lastSubmit = System.currentTimeMillis();
+        httpScansCount.incrementAndGet();
         scannerService.submit(t);
     }
             
     @Override
     public void submitDependencyTask(Runnable r) {
-        lastSubmit=System.currentTimeMillis();
+        //lastSubmit=System.currentTimeMillis();
+        //reporter.info("received dependency task");
+        dependencyScansCount.incrementAndGet();
         dependencyService.submit(r);
     }
 
@@ -138,5 +153,15 @@ public class Sniffer implements ScanService, DependencyService {
     }
     
     public static final String SYNTAX = "java top.marchand.maven.dependency.sniffer.Sniffer -c config <fileName>";
+
+    @Override
+    public void scanTaskCompleted() {
+        httpScansCount.decrementAndGet();
+    }
+
+    @Override
+    public void dependencyTaskCompleted() {
+        dependencyScansCount.decrementAndGet();
+    }
 
 }

@@ -13,12 +13,15 @@ import nu.xom.Element;
 import nu.xom.Elements;
 import nu.xom.ParsingException;
 import nu.xom.ValidityException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  * @author cmarchand
  */
 public class Config {
+    private static final Logger LOGGER = LoggerFactory.getLogger(Config.class);
     private String basexHost;
     private int basexPort = 1984;
     private String basexUser = "admin";
@@ -51,6 +54,7 @@ public class Config {
                 default: System.err.println("unexpected element : /config/basex/"+el.getLocalName());
             }
         }
+        LOGGER.info("Connectiong to basex "+basexUser+"@"+basexHost);
         Element nexusElement = (Element)(documentConfig.query("/config/nexus").get(0));
         Elements nexusChilds = nexusElement.getChildElements();
         nexusRoots = new String[nexusChilds.size()];
@@ -60,7 +64,7 @@ public class Config {
         Element runtimeElement = documentConfig.getRootElement().getFirstChildElement("runtime");
         try {
             nbThreads = Integer.parseInt(runtimeElement.getFirstChildElement("nbThreads").getValue());
-        } catch(Exception ex) {
+        } catch(NumberFormatException ex) {
             // ignore...
         }
     }

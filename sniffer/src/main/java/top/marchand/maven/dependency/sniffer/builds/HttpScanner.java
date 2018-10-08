@@ -35,7 +35,7 @@ public class HttpScanner implements Runnable {
 
     @Override
     public void run() {
-        reporter.info("looking at "+urlToScan);
+//        reporter.info("looking at "+urlToScan);
         try {
             URL url = new URL(urlToScan);
             Document doc = Jsoup.parse(url, 1000);
@@ -56,6 +56,8 @@ public class HttpScanner implements Runnable {
             }
         } catch(IOException ex) {
             reporter.error(urlToScan, ex);
+        } finally {
+            scannerService.scanTaskCompleted();
         }
     }
 }

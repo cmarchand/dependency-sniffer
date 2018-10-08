@@ -15,4 +15,9 @@ public interface ScanService {
      * @param t 
      */
     public void submitScantask(Runnable t);
+    
+    /**
+     * Notifies that a scan task is completed
+     */
+    public void scanTaskCompleted();
 }

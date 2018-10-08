@@ -9,9 +9,9 @@
         <host>localhost</host>
     </basex>
     <nexus>
-        <root>http://nexus.lefebvre-sarrut.eu/service/rest/repository/browse/snapshots/</root>
+        <root>https://nexus.lefebvre-sarrut.eu/service/rest/repository/browse/releases/</root>
     </nexus>
     <runtime>
-        <nbThreads>4</nbThreads>
+        <nbThreads>6</nbThreads>
     </runtime>
 </config>
